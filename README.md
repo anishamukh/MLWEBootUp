@@ -1,14 +1,11 @@
-# ModHE
-A module-LWE based homomorphic encryption scheme variant of RNS-CKKS/HEAAN.
+# MLWEBootUp
+This repository contains the proof-of-concept implementation of the following approaches for MLWE-CKKS:
+1. Rank-adaptive encryption framework
+2. Baseline bootstrapping (port from RLWE-CKKS to MLWE-CKKS domain)
+3. Cross-rank optimization for the first bootstrapping after client upload
 
-## Proof-of-concept implementation
-We give a proof-of-concept Sage implementation of the important ModHE algorithms for a module of rank two.
-
-## Implementation using OpenFHE
-We have also integrated ModHE sub-routines in OpenFHE. 
 
 ## Description
-We built the ModCKKS algorithms based on the ring CKKS variant. For two elements **x** = (x_0, ..., x_(m-1))  and **y**= (y_0, ..., y_(m-1))  in a module R_q^m, operations between them boil down to lower-level operations between their respective components (x_i) and (y_i) in the underlying ring. 
 
 ## How to build/run in SageMath
 Different subroutines have been added as separate files with .sage extension, for example, the key generation sub-routine is under the file name *KeyGen.sage*. The file *example.sage* runs all the sub-routines for two plaintext messages (real numbers).
