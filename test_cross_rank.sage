@@ -20,52 +20,10 @@
 #   eps_Rot      = ||e_Rot(r->r)||_can,inf / Delta_boot
 #   eps_XRot     = ||e_XRot(1->r)||_can,inf / Delta_boot
 #
-# where Delta_client is the ordinary CKKS client scale and Delta_boot=16*q0 is
-# the scale used by the HEAANBOOT port at the C2S entry.  This stage-aware
-# normalization is important: eps_RU, eps_Rot and eps_XRot must NOT simply be
-# added as if they were errors at the same scale/stage.
-#
-# Thus this primitive experiment answers the local question:
-#   "Does a 1->r cross-rank baby rotation itself introduce more switching
-#    error than the ordinary r->r baby rotation it replaces?"
-#
-# The stronger pipeline question -- whether replacing RankUp+bootstrap-C2S by
-# XRotUp-C2S changes final post-bootstrap precision -- is deliberately left to
-# the subsequent paired end-to-end bootstrap experiment.  These local terms
-# explain that result, but are not by themselves an exact additive prediction
-# of it because RankUp noise is propagated through ModRaise/SubSum/C2S.
-#
-# IMPORTANT IMPLEMENTATION NOTE
-# -----------------------------
-# The existing proof-of-concept Flexibility.sage uses a generic ModDown whose
-# representative convention is convenient for correctness testing but is not
-# the nearest/centered ModDown used in the paper's RankUp error derivation.
-# For a clean numerical experiment, this bench instruments the *paper-aligned*
-# nearest-ModDown generalized RNS key-switch error directly.
-#
-# For a generalized source-rank r_src -> target-rank r_tgt key switch with one
-# RNS digit per q_j active at the C2S entry, the exact added decryption error is
-#
-#   e_KS = P^{-1} sum_{u,j} c_{u,j} e_{u,j}
-#          + rho_0 + <rho_1, s_tgt>,
-#
-# where rho_0,rho_1 are the nearest-ModDown rounding errors.  To obtain these
-# rounding errors exactly, only the P-residues of the uniform key polynomials
-# are required.  The omitted q_i residues do not affect e_KS.  Therefore this
-# bench samples the exact marginal distribution relevant to the decryption
-# error without materializing the enormous full P*Q switching keys.  This is
-# essential for making n=2^12 (and exploratory larger n) practical in Sage.
+# where Delta_client is the ordinary CKKS client scale
 #
 # Parameter intent
 # ----------------
-#   q0       : the project's 60-bit client modulus.
-#   P_RU     : a distinct NTT-friendly 60-bit prime >= q0 (d=1 RankUp).
-#   q_i boot : generated near 16*q0, as in the current HEAANBOOT port.
-#   P_BOOT   : an NTT-friendly prime strictly larger than every active q_i,
-#              so the single-prime gadget digits satisfy P_BOOT >= max q_i.
-#
-# These are FUNCTIONAL/NUMERICAL experiment parameters, not certified security
-# parameters.  Concrete security must be estimated separately at P_BOOT*Qboot.
 #
 # Typical runs:
 #   CR_LOGN=12 CR_RANK=2 sage crossrank_primitive_error_bench.sage
@@ -403,7 +361,7 @@ def centered_diff_q0(a, b):
     )
 
 # -----------------------------------------------------------------------------
-# 4. Ring automorphism and exact generalized RNS key-switch noise instrument
+# 4. Ring automorphism and exact generalized RNS key-switch noise functions
 # -----------------------------------------------------------------------------
 
 
@@ -472,18 +430,6 @@ class KSNoiseState(object):
 
 
 def generalized_ks_error_at_c2s(c1_qshares, target_secret, rot_slots, state):
-    """Exact added error of nearest-ModDown generalized RNS key switching.
-
-    c1_qshares is a list over source components, with each component already in
-    the exact RNS representation present immediately before CoeffToSlot, i.e.
-    after ModRaise and the fully-packed SubSum normalization/rescale.
-
-    Only P_BOOT-side uniform key residues are materialized because the exact
-    decryption error depends on the q_i key shares only through the gadget
-    reconstruction, while the nearest-ModDown rounding terms are determined by
-    the P residue.  Independent uniform P residues are the exact marginal of a
-    uniform key polynomial modulo P_BOOT*Q_C2S.
-    """
     r_src = len(c1_qshares)
     r_tgt = int(target_secret.ncols())
     d = len(C2S_QS)
@@ -544,14 +490,6 @@ def generalized_ks_error_at_c2s(c1_qshares, target_secret, rot_slots, state):
 
 
 def c2s_entry_from_q0_raw(raw_q0):
-    """Execute the public prefix common to the fully-packed C2S entry.
-
-    q0 -> ModRaise to ACTIVE_Q shares -> full-pack SubSum normalization.
-    For full packing the SubSum rotation loop is empty, but hb_div_by_po2()
-    performs the public 1/(N/2) normalization and consumes one top RNS prime in
-    the current port.  The returned ciphertext therefore has C2S_ACTIVE_Q
-    shares and scale 16*q0, exactly as the real C2S call sees it.
-    """
     raised = heaan_mod_raise_q0(raw_q0, active=ACTIVE_Q)
     out = ModHEBootCipher(
         raised, scale=BOOT_SCALE, slots=SLOTS, is_complex=True
@@ -732,7 +670,7 @@ for kt in range(KEY_TRIALS):
     )
 
 # -----------------------------------------------------------------------------
-# 8. CSV and paper-oriented medians
+# 8. CSV and medians
 # -----------------------------------------------------------------------------
 
 if len(rows) == 0:
@@ -795,7 +733,7 @@ with open(SUMMARY_CSV, "a") as f:
         writer.writerow(row)
 
 print("\n============================================================")
-print("PAPER-ORIENTED MEDIAN SUMMARY")
+print("MEDIAN SUMMARY")
 print("============================================================")
 for srow in summary_rows:
     print(
@@ -813,3 +751,5 @@ for srow in summary_rows:
     )
 
 print("saved:", OUTPUT_CSV, "and", SUMMARY_CSV)
+
+#AI info: this test script has AI generated raw code

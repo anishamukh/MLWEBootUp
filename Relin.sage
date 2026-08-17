@@ -1,10 +1,5 @@
 # Relinearisation for arbitrary MLWE rank.
-# Evaluation key layout:
-#   evk_key = [pairs, evkb_shares, Arow_shares]
-#   pairs[t] = (i,k) represents monomial s_i*s_k
-#   evkb_shares[t][j][u] is b-share for pair t, decomposition modulus q_j,
-#                         output modulus moduli[u]
-#   Arow_shares[t][j][k][u] is A-row share for output linear component k.
+
 
 # function for EVALUATION KEY
 def relin_keygen(key):

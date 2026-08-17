@@ -6,33 +6,22 @@
 #   CLIENT (smallest representation)
 #       rank 1, ring degree n = POLDEG, one modulus q0
 #           |
-#           |  genuine key-switch / rank-up (NOT zero padding)
+#           |  key-switch / rank-up 
 #           v
 #   SERVER
 #       MLWE rank r = MLWE, same ring degree n, still at q0
 #           |
-#           |  HEAANBOOT-style ModHE bootstrap
+#           |  ModHE bootstrap
 #           v
 #       MLWE rank r, post-bootstrap evaluation modulus Q_eval
 #
-# The base/evaluation q-primes are the q_list entries already present in
-# constants.sage. configure_heaanboot_chain() appends temporary bootstrap primes
-# above them. The bootstrap consumes those temporary primes and should finish
-# with exactly the original evaluation chain exposed again.
-#
-# IMPORTANT SECURITY NOTE
+# IMPORTANT NOTE
 # -----------------------
 # This file checks FUNCTIONAL CORRECTNESS. It does not infer the largest secure
-# Q from (n,r). For a security-valid experiment, choose the original q_list in
-# constants.sage from an MLWE/RLWE estimator for the intended (n,r,secret,error)
-# parameters, and include the temporary bootstrap modulus and special modulus p
-# in the security analysis. Set SECURE_MAX_LOG2_PQ below to the estimator's
-# accepted upper bound if you want this driver to enforce a bit-budget check.
+# Q from (n,r). 
 # -----------------------------------------------------------------------------
 
-# =============================================================================
 # 0. Base ModHE parameters and bootstrap-chain construction
-# =============================================================================
 
 load("constants.sage")
 load("bootstrap_heaanboot_chain.sage")
@@ -79,9 +68,9 @@ load("bootstrap_heaanboot_modhe.sage")
 load("croos_rank_optimization.sage")
 
 
-# =============================================================================
-# 1. Diagnostics/helpers
-# =============================================================================
+
+# 1. Check helpers
+
 
 def _prod_int(vals):
     z = ZZ(1)
@@ -130,8 +119,6 @@ def client_encrypt_q0_ckks_minimal(values, client_pk_q0, scale=p_enc, method="ff
     """True rank-1/q0-only CKKS encryption for the client side.
 
     Input public-key material contains only the q0 projections [b0,a0].
-    Output layout matches the ModHE ciphertext format:
-        [[c0_q0], [[c1_q0]]].
     """
     mpoly = ckks_encode(values, scale, method)
 
@@ -193,11 +180,8 @@ else:
     print("security bit-budget check      = NOT ENFORCED (correctness test only)")
 
 
-# =============================================================================
-# 2. Key material
-# =============================================================================
 
-# Independent client and server secrets.  The rank-up is therefore a genuine
+# Independent client and evaluation secrets.  The rank-up is therefore a genuine
 # key-switch from a rank-1 secret to an independent rank-r MLWE secret.
 key_client = public_private_keygen(rank=R_CLIENT)
 print("\nClient's key=", key_client)
@@ -207,7 +191,7 @@ print("\nEval key=", key_eval)
 # Server-side switching key: rank 1 -> rank r.
 rankup_key = rankup_keygen(key_client[0], key_eval[0])
 
-# All bootstrap/evaluation keys are generated under the SERVER MLWE secret.
+# All bootstrap/evaluation keys are generated under the evalaution MLWE secret.
 relin_key = relin_keygen(key_eval)
 
 SLOTS = POLDEG // 2
@@ -240,10 +224,7 @@ print("baby k =", cross_baby_keys.k)
 print("rotation indices =", cross_baby_keys.rotation_indices)
 heaan_bootstrap_depth_report(logT=LOGT, logI=LOGI, packed=True)
 
-
-# =============================================================================
 # 3. Test message
-# =============================================================================
 
 base_vals = [
      0.035 + 0.010*I,
@@ -253,10 +234,8 @@ base_vals = [
 ]
 vals = [base_vals[i % len(base_vals)] for i in range(SLOTS)]
 
-
-# =============================================================================
 # 4. CLIENT: rank-1, q0-only encryption
-# =============================================================================
+
 
 print("\n================================================")
 print("STAGE A: CLIENT q0-ONLY, RANK-1 ENCRYPTION")
@@ -333,9 +312,8 @@ print("rank-up max abs error vs message =", rankup_err)
 print("rank-up message-preservation error =", rankup_preservation_err)
 
 
-# =============================================================================
+
 # 6. SERVER: bootstrap q0 -> evaluation modulus Q_eval
-# =============================================================================
 
 print("\n================================================")
 print("STAGE C: MLWE BOOTSTRAP q0 -> Q_eval")
@@ -373,13 +351,10 @@ boot_err = _max_slot_error(boot_dec, vals)
 print("post-bootstrap max abs error =", boot_err)
 
 
-# =============================================================================
 # 7. CONTROL: direct rank-r q0 encryption -> bootstrap
-# =============================================================================
-# This control separates rank-up error from bootstrap error.
 
 print("\n================================================")
-print("CONTROL: DIRECT rank-r q0 ENCRYPTION -> BOOTSTRAP")
+print("DIRECT rank-r q0 ENCRYPTION -> BOOTSTRAP")
 print("================================================")
 
 ct_direct_raw = client_encrypt_q0_ckks(
@@ -415,10 +390,8 @@ print("direct rank-r bootstrap max abs error =", direct_boot_err)
 print("Boost-MLWE bootstrap max abs error    =", boot_err)
 print("extra error from rank-up path (rough) =", max(0.0, boot_err - direct_boot_err))
 
+# 8. POST-BOOTSTRAP: one MLWE multiplication
 
-# =============================================================================
-# 8. POST-BOOTSTRAP USABILITY: one MLWE multiplication
-# =============================================================================
 
 print("\n================================================")
 print("STAGE D: ONE POST-BOOTSTRAP MLWE SQUARE")
@@ -532,6 +505,3 @@ print("  2. Stage B decrypts correctly under the independent rank-r MLWE key.")
 print("  3. Stage C returns rank r and exactly EVAL_Q_COUNT q-shares.")
 print("  4. Bootstrap error is close to the direct rank-r bootstrap control.")
 print("  5. A homomorphic operation works after bootstrapping.")
-print("\nSecurity reminder: Q_eval is 'maximum secure' only if BASE_QS was chosen")
-print("from a concrete estimator for the target n*r instance AND the estimator")
-print("also accepts the larger temporary p*Q_boot used by bootstrap/evaluation keys.")

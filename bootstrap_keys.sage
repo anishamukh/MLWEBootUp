@@ -2,7 +2,7 @@
 # BootstrapKeys.sage
 # Generic ModHE/ModRNS key-switching, rotation, and conjugation keys.
 #
-# Expected load order:
+# load order:
 #   load("constants.sage")
 #   load("auxiliary_functions.sage")
 #   load("KeyGen.sage")

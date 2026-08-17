@@ -1,6 +1,3 @@
-# -----------------------------------------------------------------------------
-# Client q0-only / toy q0->Q materialization helpers
-# -----------------------------------------------------------------------------
 
 def _center_lift_int_q0(a):
     a = int(a) % int(q_list[0])
@@ -20,13 +17,6 @@ def shares_from_center_lift_q0(poly_q0, active=L):
 
 
 def toy_modraise_q0_to_full(ciphertext_q0, active=L):
-    """Toy q0 -> Q materialization for correctness experiments.
-
-    This is NOT a real CKKS/ModHE bootstrap.  It only maps each q0 share to a
-    coefficient-wise centered integer representative and then reduces it modulo
-    q_0,...,q_{active-1}.  It is useful for testing that rank-up preserves the
-    q0 decryption invariant before a future real bootstrapping implementation.
-    """
     if len(ciphertext_q0[0]) != 1:
         raise ValueError("toy_modraise_q0_to_full expects a q0-only ciphertext")
 

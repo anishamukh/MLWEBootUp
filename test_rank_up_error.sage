@@ -626,6 +626,5 @@ print("  E_rankup_added_can measures RankUp itself: Dec_E(ct_up)-Dec_C(ct_C).")
 print("  E_after_rankup_can is the total noise that would enter bootstrapping.")
 print("  E_fresh_rankr_can is the conventional full-RNS rank-r encryption control.")
 print("  Precision values are absolute CKKS noise precision log2(Delta/E).")
-print("  Slot errors additionally include CKKS encoding-rounding error.")
-print("  The generic bound uses observed B_c1, B_ruk, B_md, B_s; it does NOT")
-print("  assume that the loose closed-form specialization in the draft is tight.")
+
+#AI info: this test script has AI generated raw code

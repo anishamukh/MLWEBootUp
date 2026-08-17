@@ -5,31 +5,6 @@
 #   kimandrik/HEAANBOOT, HEAAN/src/Scheme.cpp and Context.cpp
 # for the ModHE / MLWE-CKKS Sage ciphertext representation used in this project.
 #
-# The C++ source uses HEAAN's power-of-two coefficient modulus and bit shifts.
-# ModHE uses an RNS chain of odd primes.  Therefore two changes are unavoidable:
-#
-#   (1) a C++ reScaleBy(logp) is mapped to one ModHE RNS rescale, and the
-#       plaintext multiplier is encoded at the current top q-prime so the scale
-#       is preserved;
-#   (2) small C++ right-shifts such as divByPo2(logT+1) are emulated exactly at
-#       the coefficient level by centered CRT reconstruction, rounded division,
-#       and re-sharing.  This is slow but appropriate for a Sage correctness PoC.
-#
-# Everything else follows the HEAANBOOT structure directly:
-#   addBootContext / addBootKey
-#   normalize + ModRaise
-#   SubSum
-#   CoeffToSlot
-#   exp2pi
-#   EvalExp
-#   SlotToCoeff
-#
-# Required files already present in this project:
-#   constants.sage, auxiliary_functions.sage, HMult.sage, Relin.sage,
-#   Flexibility.sage, encode.sage, encode-encrypt.sage
-#
-# For realistic logI/logT, call configure_heaanboot_chain() from
-# bootstrap_chain.sage BEFORE key generation to append large boot primes.
 # -----------------------------------------------------------------------------
 
 import copy as _hb_copy_module
@@ -43,9 +18,7 @@ HB_CC = ComplexField(HB_PREC)
 HB_RR = RealField(HB_PREC)
 
 
-# =============================================================================
-# Metadata wrapper (analogue of HEAAN Ciphertext::logp/logq/slots/isComplex)
-# =============================================================================
+# Metadata wrapper (following heaanboot Ciphertext::logp/logq/slots/isComplex)
 
 class ModHEBootCipher(object):
     def __init__(self, raw, scale=p_enc, slots=None, is_complex=True,
@@ -87,10 +60,7 @@ def hb_unwrap(cipher):
     return cipher
 
 
-# =============================================================================
 # Basic ciphertext/RNS helpers
-# =============================================================================
-
 
 def _hb_raw_copy(ct):
     return _hb_copy_module.deepcopy(ct)
@@ -177,7 +147,6 @@ def hb_sub_into_second(c1, c2):
 def hb_add(c1, c2):
     out = c1.copy()
     out.raw = _hb_raw_add(c1.raw, c2.raw)
-    # C++ add keeps cipher1 metadata.  We require approximately matching scales.
     out.scale = c1.scale
     return out
 
@@ -199,10 +168,7 @@ def hb_negate(c):
     return out
 
 
-# =============================================================================
-# Centered CRT reconstruction and HEAAN-style bit shifts
-# =============================================================================
-
+# Centered CRT reconstruction and heaanboot-style bit shifts
 
 def _hb_crt_integer(residues, moduli_list):
     """CRT without relying on Sage's overloaded crt() signatures."""
@@ -284,17 +250,7 @@ def _hb_raw_div_pow2_round(ct, bits):
 """
 
 def hb_div_by_po2(cipher, bits):
-    """
-    RNS-compatible analogue of HEAAN divByPo2(bits).
 
-    Desired semantic effect:
-        plaintext <- plaintext / 2^bits
-        scale     <- scale
-
-    Since an RNS chain cannot remove an arbitrary number of bits,
-    implement this as multiplication by 2^(-bits), followed by
-    one ordinary RNS rescale.
-    """
     bits = int(bits)
 
     if bits <= 0:
@@ -335,17 +291,7 @@ def hb_virtual_rescale_by_po2(cipher, bits):
     return out
 """
 def hb_virtual_rescale_by_po2(cipher, bits):
-    """
-    RNS-compatible analogue of HEAAN reScaleBy(bits)
-    when bits is smaller than one RNS prime.
 
-    Desired semantic effect:
-        plaintext <- plaintext
-        scale     <- scale / 2^bits
-
-    We multiply by plaintext 1 encoded at scale approximately
-    qdrop / 2^bits, then consume qdrop.
-    """
     bits = int(bits)
 
     if bits <= 0:
@@ -381,10 +327,8 @@ def hb_virtual_rescale_by_po2(cipher, bits):
     # while plaintext value stays unchanged.
     return hb_rescale_one(tmp)
 
-# =============================================================================
-# True ModHE RNS rescaling (one q-prime)
-# =============================================================================
 
+# True ModHE RNS rescaling (one q-prime)
 
 def hb_rescale_one(cipher):
     """Consume the current top RNS q-prime using ModHE rescaling."""
@@ -408,10 +352,8 @@ def hb_mod_down_one(cipher):
     return hb_mod_down_to_level(cipher, cipher.level()-1)
 
 
-# =============================================================================
-# Plaintext polynomial multiplication / constants / i and -i
-# =============================================================================
 
+# Plaintext polynomial multiplication / constants / i and -i
 
 def _hb_raw_mult_by_poly(ct, poly):
     active = len(ct[0])
@@ -445,7 +387,6 @@ def _hb_constant_poly(value, scale):
 
 
 """def hb_add_const(cipher, value):
-    #Add value at the ciphertext's current scale (HEAAN addConst).
     out = cipher.copy()
     z = HB_CC(value)
     zr = ZZ(round(HB_RR(z.real()) * out.scale))
@@ -542,9 +483,7 @@ def hb_idiv(cipher):
     return hb_mult_by_monomial(cipher, 3*(POLDEG//2))
 
 
-# =============================================================================
-# Homomorphic multiplication + relinearization
-# =============================================================================
+# Homomorphic multiplication + relinearization (added here again because modhe mult+relin code was not friendly to parameterization)
 
 
 def hb_mult(c1, c2, relin_key):
@@ -569,10 +508,7 @@ def hb_square_rescale(cipher, relin_key):
     return hb_rescale_one(hb_square(cipher, relin_key))
 
 
-# =============================================================================
 # Ring automorphisms, rotations and conjugation for MLWE ciphertexts
-# =============================================================================
-
 
 def hb_automorphism_poly(poly, exponent):
     """Apply X -> X^exponent in Z[X]/(X^N+1), exponent odd mod 2N."""
@@ -709,10 +645,8 @@ def hb_conjugate(cipher, boot_keys):
     return out
 
 
-# =============================================================================
-# Exact HEAAN Context::fftSpecialInv and addBootContext translation
-# =============================================================================
 
+# Exact HEAAN Context::fftSpecialInv and addBootContext translation
 
 def _hb_bit_reverse(vals):
     vals = list(vals)
@@ -837,12 +771,7 @@ class HEAANBootContext(object):
 
 
 def heaan_add_boot_context(slots, nominal_logp=None, verbose=True):
-    """Literal translation of Context::addBootContext(), without integer scale.
 
-    C++ pre-scales pvec/pvecInv/p1/p2 by 2^logp.  Here we store their unit-scale
-    real coefficient vectors and scale them by the current top RNS q-prime when
-    they are multiplied into a ciphertext.  This is the RNS-compatible analogue.
-    """
     slots = int(slots)
     Nh = POLDEG//2
     M = 2*POLDEG
@@ -930,9 +859,8 @@ def heaan_add_boot_context(slots, nominal_logp=None, verbose=True):
     return HEAANBootContext(slots, pvec, pvecInv, p1, p2, nominal_logp)
 
 
-# =============================================================================
-# CoeffToSlot / SlotToCoeff (Scheme.cpp lines 858-949)
-# =============================================================================
+
+# CoeffToSlot / SlotToCoeff (following heaanboot, notw that this is different from the later BT procedures proposed)
 
 
 def _hb_mult_by_unit_poly(cipher, unit_coeffs):
@@ -1001,10 +929,7 @@ def heaan_slot_to_coeff(cipher, boot_context, boot_keys):
     return hb_rescale_one(out)
 
 
-# =============================================================================
-# exp2piAndEqual (degree-7 grouped polynomial), Scheme.cpp 951-998
-# =============================================================================
-
+# exp2piAndEqual (degree-7 grouped polynomial)
 
 """def heaan_exp2pi(cipher, relin_key):
     #Direct RNS translation of Scheme::exp2piAndEqual().
@@ -1040,10 +965,7 @@ def heaan_slot_to_coeff(cipher, boot_context, boot_keys):
 
 def heaan_exp2pi(cipher, relin_key, plain_scale):
     """
-    Degree-7 grouped exponential approximation from HEAANBOOT.
-
-    plain_scale is the RNS analogue of the explicit `logp`
-    passed to Scheme::exp2piAndEqual().
+    Degree-7 grouped exponential approximation.    
     """
     pi = HB_RR.pi()
 
@@ -1125,9 +1047,7 @@ def heaan_exp2pi(cipher, relin_key, plain_scale):
 
     return out
 
-# =============================================================================
-# EvalExp, Scheme.cpp 999-1064
-# =============================================================================
+# EvalExp
 
 
 def heaan_eval_exp(cipher, boot_context, boot_keys, relin_key, logT, logI=4):
@@ -1213,10 +1133,8 @@ def heaan_eval_exp(cipher, boot_context, boot_keys, relin_key, logT, logI=4):
     return out
 
 
-# =============================================================================
-# ModRaise and full bootstrapAndEqual, Scheme.cpp 1065-1090
-# =============================================================================
 
+# ModRaise and bootstrapp
 
 def _hb_center_lift_q0_int(a):
     a = ZZ(a) % ZZ(q_list[0])
@@ -1232,12 +1150,7 @@ def _hb_modraise_component_q0(poly_q0, active):
 
 
 def heaan_mod_raise_q0(raw_q0, active=None):
-    """RNS form of normalizeAndEqual + cipher.logq = logQ.
 
-    This is the mathematically relevant part of the previously named
-    toy_modraise_q0_to_full(): each q0 coefficient is first centered as an
-    integer and then reduced into every q_i of the raised modulus.
-    """
     if active is None:
         active = L
     active = int(active)
@@ -1299,16 +1212,8 @@ def heaan_subsum(cipher, boot_keys):
 def heaan_bootstrap(cipher, boot_context, boot_keys, relin_key,
                     logT=0, logI=4, output_scale=None,
                     boot_logp=None, active_raise=None, verbose=True):
-    """Full HEAANBOOT bootstrap adapted to ModHE's MLWE/RNS ciphertexts.
-
-    Input may have any current RNS level; as in C++ it is first modulus-downed to
-    q0.  It is then centered and raised to the full selected RNS chain.
-
-    boot_logp is retained as a bit-size hint for compatibility/diagnostics.
-    The actual temporary CKKS scale is set to 16*q0.  This is the exact RNS
-    analogue of HEAANBOOT's `cipher.logp = logq + 4`, because in the C++ code
-    the low modulus is q=2^logq and therefore 2^(logq+4)=16*q.  The appended
-    boot primes should consequently be chosen close to 16*q0.
+    """
+    Full HEAANBOOT bootstrap adapted to ModHE's MLWE/RNS ciphertexts.
     """
     if not isinstance(cipher, ModHEBootCipher):
         raise TypeError("heaan_bootstrap expects ModHEBootCipher; use hb_wrap()")
@@ -1354,10 +1259,7 @@ def heaan_bootstrap(cipher, boot_context, boot_keys, relin_key,
     return out
 
 
-# =============================================================================
-# Diagnostics / resource checks
-# =============================================================================
-
+# Some checks
 
 def heaan_bootstrap_depth_report(logT=0, logI=4, packed=True):
     if packed:

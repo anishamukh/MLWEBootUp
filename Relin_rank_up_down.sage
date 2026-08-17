@@ -1,10 +1,4 @@
-# Relinearisation for arbitrary MLWE rank.
-# Evaluation key layout:
-#   evk_key = [pairs, evkb_shares, Arow_shares]
-#   pairs[t] = (i,k) represents monomial s_i*s_k
-#   evkb_shares[t][j][u] is b-share for pair t, decomposition modulus q_j,
-#                         output modulus moduli[u]
-#   Arow_shares[t][j][k][u] is A-row share for output linear component k.
+#some functions copied from Relin.sage file
 
 # function for EVALUATION KEY
 def relin_keygen(key):
@@ -86,23 +80,7 @@ def relinearisation(non_linearized_ciphertext, evk_key):
             "ciphertext quadratic part and evaluation-key pairs do not match"
         )
 
-    # ------------------------------------------------------------
-    # IMPORTANT:
-    #
-    # Evaluation keys were generated over the FULL modulus list
-    #
-    #     q_0,...,q_{L-1},p
-    #
-    # and therefore the p-share is permanently stored at the final
-    # key index, irrespective of the current ciphertext level.
-    # ------------------------------------------------------------
     p_key_idx = len(moduli) - 1
-
-    # Temporary p-extended result has layout
-    #
-    #     q_0,...,q_{active-1},p
-    #
-    # and therefore has active+1 entries.
     ct0_prime = [R(0) for _ in range(active + 1)]
     ct1_prime = [
         [R(0) for _ in range(active + 1)]
@@ -111,15 +89,6 @@ def relinearisation(non_linearized_ciphertext, evk_key):
 
     for out_pos in range(active + 1):
 
-        # --------------------------------------------------------
-        # Distinguish:
-        #
-        # out_pos:
-        #     index in the SHORTENED temporary result
-        #
-        # key_idx:
-        #     index in the FULL evaluation key.
-        # --------------------------------------------------------
         if out_pos < active:
 
             # q_0,...,q_{active-1}
@@ -174,13 +143,7 @@ def relinearisation(non_linearized_ciphertext, evk_key):
                 mod
             )
 
-    # ------------------------------------------------------------
-    # ModDown:
-    #
-    #   (q_0,...,q_{active-1},p)
-    #            ->
-    #   (q_0,...,q_{active-1})
-    # ------------------------------------------------------------
+
     ct0_scaled = ModDown_poly(
         ct0_prime,
         active

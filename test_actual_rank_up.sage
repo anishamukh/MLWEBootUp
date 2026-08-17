@@ -16,17 +16,6 @@
 # It also compares against a fresh conventional rank-r ciphertext generated
 # over the complete RNS evaluation modulus Q.
 #
-# IMPORTANT:
-#   This bench uses the concrete HEAAN-style distributions:
-#       secret polynomial : HWT(h), signed {-1,0,+1}, exact weight h
-#       error polynomial  : coefficient-wise discrete Gaussian DG(sigma^2)
-#       encryption v      : ZO(0.5)
-#
-#   The q0 RankUp below is deliberately specialized to the construction in the
-#   paper: one key modulo P*q0, centered lift of c1, and nearest ModDown.
-#   This makes the measured primitive match Algorithm 1 / Proposition 1 rather
-#   than the more general full-RNS proof-of-concept key-switching path.
-#
 # Run from the project source directory, e.g.
 #       RU_LOGN=10 RU_RANK=2 RU_P_BITS=60 sage rankup_error_precision_final.sage
 #
@@ -38,8 +27,7 @@ import os
 
 # Load the project modulus chain, then override only the ring degree/rank for
 # this isolated RankUp experiment.  This avoids editing constants.sage between
-# runs.  The q-primes themselves are kept fixed across runs so that changing n
-# measures the ring-degree effect rather than a simultaneous modulus change.
+# runs.  
 load("constants.sage")
 
 EXP_LOGN = int(os.environ.get("RU_LOGN", "12"))
@@ -73,16 +61,11 @@ Q0 = ZZ(q_list[0])
 # Dedicated RankUp auxiliary primes for the precision-sensitivity experiment.
 # Both are prime and satisfy P = 1 (mod 2*2^14), hence they are NTT-friendly
 # for every tested n in {2^10, 2^12, 2^14}.
-#
-# P54 is an intentionally smaller sensitivity point.  It is below q0 and is
-# NOT the nominal d=1 DPad-style choice; it is included only to demonstrate
-# the dependence of the key-switching error on P.
-#
+# P54 is an intentionally smaller sensitivity point. 
 # P60 is the nominal choice: it matches q0's 60-bit word size and satisfies
 # P >= q0 for the single-digit RankUp specialization.
 #
-# These primes are LOCAL to this benchmark and do not replace the project's
-# existing special modulus p used by the bootstrap/relinearization prototype.
+
 P54 = ZZ(9007199379521537)
 P60 = ZZ(576460752341598209)
 
@@ -186,7 +169,7 @@ def sample_uniform_poly(mod):
 
 
 # =============================================================================
-# 2. Paper-aligned key generation / encryption helpers
+# 2. key generation / encryption helpers
 # =============================================================================
 
 def keygen_client_q0():
@@ -668,12 +651,11 @@ with open(OUTPUT_CSV, "w") as f:
 
 
 # =============================================================================
-# 8. Compact paper-oriented summary
+# 8. Compact summary
 # =============================================================================
 
-# For the paper we deliberately report ONE central value per parameter set:
-# the median over all observations.  This follows the common CKKS experimental
-# convention of repeating randomized trials and reporting median precision,
+# For the paper we deliberately report ONE central value per parameter set: This follows the common CKKS experimental
+# convention of repeating randomized trials and reporting min precision,
 # without adding percentile columns to the main table.
 
 """
@@ -786,3 +768,5 @@ with open(SUMMARY_CSV, "a") as f:
     writer.writerow(paper_row)
 
 print("saved:", OUTPUT_CSV, "and", SUMMARY_CSV)
+
+#AI info: this test script has AI generated raw code

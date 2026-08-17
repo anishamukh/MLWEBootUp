@@ -1,11 +1,6 @@
 # -----------------------------------------------------------------------------
 # bootstrap_example_modhe.sage
 #
-# End-to-end correctness driver for the HEAANBOOT -> ModHE/MLWE Sage port.
-# It mirrors TestScheme::testBootstrap() from the HEAANBOOT repository, but
-# starts from a q0-only RNS ModHE ciphertext (the client-Boost setting).
-#
-# IMPORTANT:
 #   configure_heaanboot_chain() MUST run before key generation.
 # -----------------------------------------------------------------------------
 
@@ -14,7 +9,7 @@ load("bootstrap_heaanboot_chain.sage")
 
 # HEAANBOOT parameters.
 # Repository default: logI = 4 (for h=64).  logT is experiment/parameter-set
-# dependent.  Start with logT=0 while checking the port.
+# dependent.  Start with logT=0 for sanity chexk.
 LOGT = 5
 LOGI = 4
 
@@ -290,7 +285,7 @@ for i in range(SLOTS):
 print("max error =", max(errs))
 
 # q0-only client encryption.  This is the ModHE-RNS analogue of encrypting at
-# the low modulus before HEAANBOOT raises the ciphertext modulus.
+# the low modulus before bootstrapping raises the ciphertext modulus.
 raw_q0 = client_encrypt_q0_ckks(vals, key, scale=p_enc, method="fft")
 ct = hb_wrap(raw_q0, scale=p_enc, slots=SLOTS, is_complex=True)
 

@@ -6,9 +6,7 @@
 # IMPORTANT
 # ---------
 # Call configure_heaanboot_chain() *after* loading constants.sage and *before*
-# generating any public/evaluation/rotation keys.  It appends RNS primes whose
-# size is close to the HEAANBOOT temporary bootstrapping scale 2^(log(q0)+4).
-# These extra primes are consumed by CoeffToSlot/EvalExp/SlotToCoeff.
+# generating any public/evaluation/rotation keys. 
 #
 # This is a correctness/prototyping parameter helper, NOT a security-certified
 # parameter selection routine.  Re-run a concrete MLWE estimator for any real
@@ -85,7 +83,7 @@ def heaanboot_required_rescale_primes(logT, logI=4, packed=True):
 def configure_heaanboot_chain(logT=0, logI=4, extra_guard_primes=0,
                                keep_existing_eval_primes=True,
                                boot_logp=None, verbose=True):
-    """Extend the currently loaded ModHE RNS chain for HEAANBOOT.
+    """Extending the currently loaded ModHE RNS chain for HEAANBOOT.
 
     The original q0 and, by default, all existing q1,... are retained as the
     post-bootstrap/evaluation chain.  Large bootstrapping primes are appended at
@@ -162,7 +160,7 @@ def configure_heaanboot_chain(logT=0, logI=4, extra_guard_primes=0,
         print("  required rescalings =", need)
         print("  special p bits      =", ZZ(p).nbits())
         print("  WARNING: parameters are for Sage correctness experiments only;")
-        print("           concrete MLWE security has not been certified here.")
+        print("           concrete MLWE security is not claimed.")
 
     return {
         "boot_logp": int(boot_logp),
