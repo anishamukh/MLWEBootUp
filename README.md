@@ -19,9 +19,10 @@ This repository contains the proof-of-concept implementation of the following ap
  sage example.sage
 ```
 
-Similarly, to test a simple bootstrapping along with the rank-adaptive encryption, run:
+Similarly, to test the rank-adaptive encryption, run:
 
 ```text
  sage boost_modhe_heaanboot_example.sage
 ```
+
 File names containing 'test' have been used to report experimental measurements in the paper.
