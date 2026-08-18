@@ -3,18 +3,9 @@
 # General rank-up and rank-reduction/rank-down routines for the ModHE Sage
 # prototype.
 #
-# Ciphertext format:
-#     ct = [c0_qshares, c1_qshares]
-#     c0_qshares[j]    = c0 mod q_j
-#     c1_qshares[i][j] = c1_i mod q_j
-#
-# Correctness targets:
-#   rank_up:   c0' + <c1', s_tgt> ~= c0 + <c1, s_src>
-#   rank_red:  c0' + <c1', s_prefix> ~= c0 + <c1, s_src>
-#
 # rank_red is the ModHE rank-reduction operation: it keeps the first r_tgt
 # secret/ciphertext components and key-switches the removed components
-# s_{r_tgt},...,s_{r_src-1} under the retained prefix secret.
+# s_{r_tgt},...,s_{r_src-1} under the retained secret.
 # -----------------------------------------------------------------------------
 
 

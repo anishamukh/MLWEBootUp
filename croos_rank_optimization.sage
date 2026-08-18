@@ -9,15 +9,6 @@
 #       -> C2S baby branches: phi_j on rank-1 ct + direct KS phi_j(s_C)->s_E
 #       -> ordinary rank-r giant rotations
 #       -> ordinary rank-r EvalExp / S2C
-#
-# IMPORTANT:
-#   * Load this file AFTER Flexibility.sage and bootstrap_heaanboot_modhe.sage.
-#   * This first PoC keeps HEAANBOOT's existing BSGS baby size k.  That isolates
-#     correctness of the fused cross-rank baby layer.  Changing k to the
-#     rank-aware optimum requires regenerating the C2S plaintext diagonals.
-#   * The current rankup_keygen() generates full-chain P*Q switching material.
-#     This is convenient for correctness testing, but over-generates key data;
-#     a later optimized implementation should generate only the C2S level keys.
 # =============================================================================
 
 
@@ -41,10 +32,6 @@ def heaan_crossrank_baby_keygen(key_client, key_eval, slots, verbose=True):
     """Generate C2S baby keys phi_j(s_C) -> s_E for j=0,...,k-1.
 
     key_client must be rank 1.  key_eval may have arbitrary target rank r.
-    The underlying project's rankup_keygen() is used as generalized KSGen.
-    Since q_list/Q/p/B have already been extended to the bootstrap chain,
-    these keys are generated at the full P*Q chain; rank_up() later consumes
-    only the active q-digits at the C2S level.
     """
     if key_client[0].ncols() != 1:
         raise ValueError("heaan_crossrank_baby_keygen expects rank-1 client key")
@@ -81,11 +68,6 @@ def heaan_crossrank_baby_keygen(key_client, key_eval, slots, verbose=True):
 
 
 def hb_cross_rank_rotate_up(cipher, rot_slots, cross_baby_keys):
-    """Compute phi_rot(cipher), then KS phi_rot(s_C) -> s_E.
-
-    Every call starts from the SAME rank-1 input ciphertext supplied by the
-    caller.  The baby branches are therefore parallel, not sequential.
-    """
     rot_slots = int(rot_slots)
 
     if cipher.rank() != 1:
@@ -115,12 +97,6 @@ def hb_cross_rank_rotate_up(cipher, rot_slots, cross_baby_keys):
 def heaan_coeff_to_slot_crossrank(cipher, boot_context,
                                   cross_baby_keys, eval_boot_keys,
                                   verbose=False):
-    """C2S with parallel 1->r baby branches and ordinary r->r giants.
-
-    This version intentionally uses the same k and the same pvec_unit[] as the
-    current heaan_coeff_to_slot().  It is therefore a correctness PoC for the
-    fused rank transition, not yet the rank-aware-k optimization.
-    """
     if cipher.rank() != 1:
         raise ValueError("cross-rank C2S expects rank-1 input")
 
@@ -129,10 +105,6 @@ def heaan_coeff_to_slot_crossrank(cipher, boot_context,
     if int(cross_baby_keys.k) != k:
         raise ValueError("cross baby key k does not match current C2S context")
 
-    # ------------------------------------------------------------------
-    # Baby layer: ALL branches start independently from 'cipher'.
-    # Each branch does phi_j at rank 1, followed by 1->r key switching.
-    # ------------------------------------------------------------------
     rotvec = [None] * k
     for j in range(k):
         rotvec[j] = hb_cross_rank_rotate_up(cipher, j, cross_baby_keys)
@@ -172,17 +144,12 @@ def heaan_bootstrap_crossrank_c2s(cipher, boot_context,
                                   output_scale=None, active_raise=None,
                                   verbose=True):
     """Fully-packed bootstrap with ModRaise-before-rank-transition.
-
-    Pipeline:
       rank-1/q0
         -> public ModRaise at rank 1
         -> full-packed public SubSum normalization
         -> C2S baby layer: phi_j(s_C) -> s_E, 1->r
         -> ordinary rank-r EvalExp
         -> ordinary rank-r S2C
-
-    This PoC deliberately rejects sparse packing because sparse SubSum performs
-    rotations before C2S and would need its own cross-rank treatment.
     """
     if not isinstance(cipher, ModHEBootCipher):
         raise TypeError("expected ModHEBootCipher")
@@ -246,9 +213,7 @@ def heaan_bootstrap_crossrank_c2s(cipher, boot_context,
     return out
 
 
-# =============================================================================
-# Correctness diagnostics
-# =============================================================================
+# Correctness checks
 
 def _poc_centered_poly_diff_q0(a, b):
     diff = poly_mod_prime((a - b) % firreducible, q_list[0])
@@ -265,12 +230,6 @@ def _poc_max_abs_coeff(poly):
 def test_cross_rank_rotation_primitive(ct_client, key_client, key_eval,
                                        cross_baby_keys,
                                        rotations=None, active_raise=None):
-    """Check Dec_sE(XRotUp_j(Lift(ct))) ~= phi_j(Dec_sC(ct)) mod q0.
-
-    This tests the cross-rank rotation primitive independently of C2S/EvalExp.
-    The comparison is performed on centered q0 decryption polynomials, so it
-    does not depend on CKKS scale metadata.
-    """
     if active_raise is None:
         active_raise = L
     if rotations is None:
@@ -317,12 +276,6 @@ def test_cross_rank_rotation_primitive(ct_client, key_client, key_eval,
 
 
 def report_crossrank_c2s_work(slots, target_rank, active_c2s=None):
-    """Structural ring-product counts for the current generalized KS loops.
-
-    Counts the products with switching-key b/a polynomials performed by
-    rank_up(), suppressing NTT/modulus widths.  This matches the current Sage
-    loop structure and is useful as a sanity check, not a runtime model.
-    """
     slots = int(slots)
     r = int(target_rank)
     k = _heaan_c2s_default_k(slots)
@@ -344,7 +297,7 @@ def report_crossrank_c2s_work(slots, target_rank, active_c2s=None):
     baseline_q0_rankup = (r + 1)
 
     print("\n================================================")
-    print("C2S STRUCTURAL KS WORK REPORT")
+    print("C2S STRUCTURAL KS REPORT")
     print("================================================")
     print("slots S                       =", slots)
     print("target rank r                 =", r)

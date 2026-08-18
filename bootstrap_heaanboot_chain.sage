@@ -1,16 +1,6 @@
 # -----------------------------------------------------------------------------
 # bootstrap_chain.sage
-#
-# Parameter helper for the HEAANBOOT -> ModHE Sage port.
-#
-# IMPORTANT
-# ---------
-# Call configure_heaanboot_chain() *after* loading constants.sage and *before*
-# generating any public/evaluation/rotation keys. 
-#
-# This is a correctness/prototyping parameter helper, NOT a security-certified
-# parameter selection routine.  Re-run a concrete MLWE estimator for any real
-# parameter set.
+# This is a correctness/prototyping parameter helper.
 # -----------------------------------------------------------------------------
 
 
@@ -22,10 +12,6 @@ def _hb_floor_log2(n):
 
 
 def _hb_ntt_prime_below(log_target, used=None, start_skip=0):
-    """Return a prime q = 1 mod 2*POLDEG just below 2^log_target.
-
-    log_target follows HEAAN's convention: the target magnitude is 2^log_target.
-    """
     if used is None:
         used = set()
     step = ZZ(2 * POLDEG)
@@ -40,7 +26,6 @@ def _hb_ntt_prime_below(log_target, used=None, start_skip=0):
 
 
 def _hb_ntt_prime_below_target(target, used=None, start_skip=0):
-    """Return a prime q = 1 mod 2*POLDEG just below an integer target."""
     if used is None:
         used = set()
     step = ZZ(2 * POLDEG)
@@ -57,41 +42,13 @@ def _hb_ntt_prime_below_target(target, used=None, start_skip=0):
 
 
 def heaanboot_required_rescale_primes(logT, logI=4, packed=True):
-    """Number of large RNS primes consumed by the translated HEAANBOOT circuit.
-
-    packed=True corresponds to the usual packed branch:
-        CoeffToSlot: 1
-        exp2pi:      3
-        squarings:   logT + logI
-        EvalExp end: 1
-        SlotToCoeff: 1
-      total = logT + logI + 6.
-
-    The single-real branch omits the two linear transforms, hence +4 instead.
-    """
-    """if packed:
-        return ZZ(logT) + ZZ(logI) + 6
-    return ZZ(logT) + ZZ(logI) + 4"""
 
     if packed:
-        # RNS adaptation consumes one additional prime for:
-        #   1. SubSum divByPo2(logNh)
-        #   2. EvalExp div/rescaleByPo2(logT+1)
-        #   3. final reScaleBy(logI)
         return ZZ(logT) + ZZ(logI) + 9
 
 def configure_heaanboot_chain(logT=0, logI=4, extra_guard_primes=0,
                                keep_existing_eval_primes=True,
                                boot_logp=None, verbose=True):
-    """Extending the currently loaded ModHE RNS chain for HEAANBOOT.
-
-    The original q0 and, by default, all existing q1,... are retained as the
-    post-bootstrap/evaluation chain.  Large bootstrapping primes are appended at
-    the *top* of the chain, so normal ModHE rescaling consumes them first.
-
-    This function recomputes all global constants used by Relin/Flexibility.
-    Therefore it MUST be called before key generation.
-    """
     global q_list, p, p_enc, L, moduli, Q, p_inv_q, q_hat, q_hat_inv, B
 
     old_qs = [ZZ(q) for q in list(q_list)]
@@ -106,8 +63,6 @@ def configure_heaanboot_chain(logT=0, logI=4, extra_guard_primes=0,
     # ModHE q0 is an odd RNS prime, so target the exact analogue 16*q0.
     boot_target = ZZ(16) * q0
 
-    # Packed HEAANBOOT is the target here.  By default no guard prime is
-    # retained, so after bootstrap the original evaluation chain is exposed again.
     need = int(heaanboot_required_rescale_primes(logT, logI, packed=True))
     nboot = need + int(extra_guard_primes)
 

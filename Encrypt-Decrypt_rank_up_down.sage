@@ -1,6 +1,6 @@
 # ENCRYPTION / DECRYPTION for arbitrary MLWE rank.
-# The rank is read from the supplied key/ciphertext, not from the global MLWE
-# constant.  This allows one Sage session to hold rank-2 and rank-4 keys.
+# The rank is taken from the supplied key/ciphertext, not from the global MLWE
+# constant.  This allows one run to hold rank-2 and rank-4 keys.
 
 def _key_rank(key):
     return key[0].ncols()
