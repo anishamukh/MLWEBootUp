@@ -5,7 +5,7 @@ load("Encrypt-Decrypt.sage")
 load("HMult.sage")
 load("Relin.sage")
 
-# This example now works for arbitrary MLWE rank set in constants.sage.
+# This example works for arbitrary MLWE rank set in constants.sage.
 # For the highest parameter set, keep POLDEG=2^14 and L=7.
 
 key = public_private_keygen()
