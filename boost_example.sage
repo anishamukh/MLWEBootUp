@@ -4,13 +4,6 @@
 # Correctness checks for the hypothesis in ModHE/MLWE-CKKS:
 #   1. client encrypts at low rank r_c (one in our case) and only one base modulus q_0;
 #   2. server performs a proper key-switching rank-up r_c -> r_E;
-#
-# IMPORTANT: toy_modraise_q0_to_full is NOT cryptographic bootstrapping.  It only
-# creates a coefficient-wise centered lift of the q0 residues into all q_i.  It
-# is a correctness harness for checking message preservation across the proposed
-# rank-up + modulus-materialization path.  A real ModHE bootstrap must still be
-# implemented with ModRaise, CoeffToSlot, EvalExp/ImgExt, SlotToCoeff, rotations,
-# conjugations. 
 # -----------------------------------------------------------------------------
 
 _sage_const_2 = Integer(2); _sage_const_0p4 = RealNumber('0.4'); _sage_const_0p6 = RealNumber('0.6'); _sage_const_0 = Integer(0); _sage_const_1 = Integer(1); _sage_const_4 = Integer(4)
@@ -24,7 +17,6 @@ load("Flexibility.sage")
 load("boost_mlwe.sage")
 
 def _center_lift_int(a, q):
-    """Return the centered representative of a modulo q in (-q/2,q/2]."""
     a = int(a) % int(q)
     if a > int(q)//2:
         a -= int(q)
@@ -32,13 +24,11 @@ def _center_lift_int(a, q):
 
 
 def _center_lift_poly_from_q0(poly_q0):
-    """Interpret a q0-share polynomial as an integer polynomial."""
     coeffs = _dense_coeffs(poly_q0, POLDEG)
     return R([_center_lift_int(c, q_list[0]) for c in coeffs])
 
 
 def _shares_from_center_lift_q0(poly_q0, active=L):
-    """Create q0..q_{active-1} shares from centered q0 representatives."""
     z = _center_lift_poly_from_q0(poly_q0)
     return [poly_mod_prime(z, q_list[j]) for j in range(active)]
 
@@ -57,8 +47,6 @@ def toy_modraise_q0_to_full(ct_q0, active=L):
 
 
 def client_encrypt_q0(m_plain, key):
-    """Actual client-side low-rank, q0-only encryption.
-    """
     rank = key[0].ncols()
 
     e0 = random_poly_error()
