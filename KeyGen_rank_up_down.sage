@@ -1,7 +1,4 @@
 # function to generate PUBLIC KEY for arbitrary MLWE rank
-# Optional arguments make it possible to create several compatible keys in the
-# same example, e.g., a rank-2 key and a rank-4 key whose first two secret
-# components are the rank-2 secret.
 
 def public_private_keygen(rank=None, secret_polys=None):
 
