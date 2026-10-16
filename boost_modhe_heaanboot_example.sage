@@ -1,50 +1,24 @@
 # -----------------------------------------------------------------------------
 # boost_mlwe_full_test.sage
-#
-# End-to-end correctness test for the Boost-MLWE idea:
-#
-#   CLIENT (smallest representation)
-#       rank 1, ring degree n = POLDEG, one modulus q0
-#           |
-#           |  key-switch / rank-up 
-#           v
-#   SERVER
-#       MLWE rank r = MLWE, same ring degree n, still at q0
-#           |
-#           |  ModHE bootstrap
-#           v
-#       MLWE rank r, post-bootstrap evaluation modulus Q_eval
-#
 # IMPORTANT NOTE
-# -----------------------
 # This file checks FUNCTIONAL CORRECTNESS. It does not infer the largest secure
 # Q from (n,r). 
 # -----------------------------------------------------------------------------
 
-# 0. Base ModHE parameters and bootstrap-chain construction
-
 load("constants.sage")
 load("bootstrap_heaanboot_chain.sage")
 
-# Save the ORIGINAL ModHE evaluation chain before temporary bootstrap primes are
-# appended. With the current constants.sage this is 7 q-primes.
 EVAL_Q_COUNT = len(q_list)
 BASE_QS = [ZZ(q) for q in q_list]
 
-# HEAANBOOT parameters used by the now-working ModHE port.
 LOGT = 5
 LOGI = 4
-
-# Client uses rank 1. Server evaluates under the actual MLWE rank.
 R_CLIENT = 1
 R_EVAL = int(MLWE)
 
 if R_EVAL < 2:
     print("WARNING: R_EVAL = 1 is the RLWE special case, not a non-trivial MLWE test.")
 
-# Optional security guard. Example usage:
-#   SECURE_MAX_LOG2_PQ = 1000
-# after obtaining an accepted max log2(P*Q_boot) from your estimator.
 SECURE_MAX_LOG2_PQ = None
 
 boot_cfg = configure_heaanboot_chain(
@@ -55,7 +29,6 @@ boot_cfg = configure_heaanboot_chain(
     verbose=True
 )
 
-# Load every routine only AFTER q_list/Q/p/B have been finalized.
 load("auxiliary_functions.sage")
 load("KeyGen_rank_up_down.sage")
 load("Encrypt-Decrypt_rank_up_down.sage")
@@ -66,10 +39,6 @@ load("encode.sage")
 load("encode-encrypt.sage")
 load("bootstrap_heaanboot_modhe.sage")
 load("croos_rank_optimization.sage")
-
-
-
-# 1. Check helpers
 
 
 def _prod_int(vals):
@@ -102,11 +71,6 @@ def _ct_shape(raw):
 
 
 def make_client_pk_q0(key_client):
-    """Project the rank-1 public key to q0 only.
-
-    This is the public-key material the constrained client actually needs for
-    per-message encryption.  It avoids doing arithmetic with the full Q key.
-    """
     if key_client[0].ncols() != 1:
         raise ValueError("make_client_pk_q0 expects a rank-1 client key")
 
@@ -116,10 +80,6 @@ def make_client_pk_q0(key_client):
 
 
 def client_encrypt_q0_ckks_minimal(values, client_pk_q0, scale=p_enc, method="fft"):
-    """True rank-1/q0-only CKKS encryption for the client side.
-
-    Input public-key material contains only the q0 projections [b0,a0].
-    """
     mpoly = ckks_encode(values, scale, method)
 
     v = random_poly_sparse_binary()
@@ -146,8 +106,6 @@ def _print_slots(label, got, expected=None):
                   "got=", got[i],
                   "abs_err=", err)
 
-
-# q_list is now [original evaluation primes || temporary bootstrap primes].
 Q_EVAL = _prod_int([q_list[i] for i in range(EVAL_Q_COUNT)])
 Q_BOOT = _prod_int(q_list)
 PQ_BOOT = ZZ(p) * Q_BOOT
@@ -279,11 +237,11 @@ cross_rot_results = test_cross_rank_rotation_primitive(
 )
 
 # =============================================================================
-# 5. SERVER: genuine rank-up at q0
+# 5. SERVER: rank-up at q0
 # =============================================================================
 
 print("\n================================================")
-print("STAGE B: SERVER RANK-UP 1 -> r AT q0")
+print("STAGE B: RANK-UP 1 -> r AT q0")
 print("================================================")
 
 # rank_up() is a key switch; it does NOT append zero c1 components.
