@@ -1,14 +1,6 @@
 # =============================================================================
 # crossrank_c2s_poc.sage
-#
-# Proof-of-concept extension for the current ModHE/HEAANBOOT Sage prototype.
-#
-# Goal:
-#   q0 rank-1 client ct
-#       -> public ModRaise while rank 1
-#       -> C2S baby branches: phi_j on rank-1 ct + direct KS phi_j(s_C)->s_E
-#       -> ordinary rank-r giant rotations
-#       -> ordinary rank-r EvalExp / S2C
+# Proof-of-concept extension for the current ModHE Sage POC.
 # =============================================================================
 
 
@@ -29,10 +21,6 @@ def _heaan_c2s_default_k(slots):
 
 
 def heaan_crossrank_baby_keygen(key_client, key_eval, slots, verbose=True):
-    """Generate C2S baby keys phi_j(s_C) -> s_E for j=0,...,k-1.
-
-    key_client must be rank 1.  key_eval may have arbitrary target rank r.
-    """
     if key_client[0].ncols() != 1:
         raise ValueError("heaan_crossrank_baby_keygen expects rank-1 client key")
 
@@ -83,7 +71,6 @@ def hb_cross_rank_rotate_up(cipher, rot_slots, cross_baby_keys):
         expn = hb_rotation_exponent(rot_slots)
         raw_auto = _hb_raw_automorphism(cipher.raw, expn)
 
-    # raw_auto is under phi_rot(s_C).  Switch directly to s_E.
     raw_out = rank_up(raw_auto, cross_baby_keys.keys[rot_slots])
 
     out = cipher.copy()
@@ -103,7 +90,7 @@ def heaan_coeff_to_slot_crossrank(cipher, boot_context,
     slots = int(cipher.slots)
     k = _heaan_c2s_default_k(slots)
     if int(cross_baby_keys.k) != k:
-        raise ValueError("cross baby key k does not match current C2S context")
+        raise ValueError("cross baby key k does not match current C2S")
 
     rotvec = [None] * k
     for j in range(k):
@@ -113,7 +100,7 @@ def heaan_coeff_to_slot_crossrank(cipher, boot_context,
         print("[cross-C2S] materialized", k,
               "parallel baby ciphertexts at rank", rotvec[0].rank())
 
-    # From here onward all ciphertexts are under the same rank-r s_E.
+    # From here all ciphertexts are under the same rank-r s_E.
     tmpvec = [None] * k
     for j in range(k):
         tmpvec[j] = _hb_mult_by_unit_poly(
@@ -123,7 +110,7 @@ def heaan_coeff_to_slot_crossrank(cipher, boot_context,
         tmpvec[0] = hb_add(tmpvec[0], tmpvec[j])
     out = tmpvec[0]
 
-    # Giant steps remain ordinary same-rank rotations under s_E.
+    # Giant steps ordinary same-rank rotations under s_E.
     for ki in range(k, slots, k):
         for j in range(k):
             tmpvec[j] = _hb_mult_by_unit_poly(
@@ -143,14 +130,6 @@ def heaan_bootstrap_crossrank_c2s(cipher, boot_context,
                                   relin_key, logT=0, logI=4,
                                   output_scale=None, active_raise=None,
                                   verbose=True):
-    """Fully-packed bootstrap with ModRaise-before-rank-transition.
-      rank-1/q0
-        -> public ModRaise at rank 1
-        -> full-packed public SubSum normalization
-        -> C2S baby layer: phi_j(s_C) -> s_E, 1->r
-        -> ordinary rank-r EvalExp
-        -> ordinary rank-r S2C
-    """
     if not isinstance(cipher, ModHEBootCipher):
         raise TypeError("expected ModHEBootCipher")
     if cipher.rank() != 1:
@@ -177,16 +156,12 @@ def heaan_bootstrap_crossrank_c2s(cipher, boot_context,
     if verbose:
         print("[cross-bootstrap] after rank-1 ModRaise:", out)
 
-    # In the current implementation, for full packing the SubSum rotation loop
-    # is empty and the remaining operation is the public 2^{-log(N/2)} scaling.
-    # Call it directly to make explicit that no rank-1 high-Q rotation key is used.
     logNh = ZZ(POLDEG // 2).nbits() - 1
     out = hb_div_by_po2(out, int(logNh))
 
     if verbose:
         print("[cross-bootstrap] after public full-pack normalization:", out)
 
-    # First secret-dependent high-modulus stage: C2S cross-rank baby layer.
     out = heaan_coeff_to_slot_crossrank(
         out,
         boot_context,
@@ -198,7 +173,6 @@ def heaan_bootstrap_crossrank_c2s(cipher, boot_context,
     if verbose:
         print("[cross-bootstrap] after cross-rank CoeffToSlot:", out)
 
-    # From this point on the ciphertext is a standard rank-r MLWE ciphertext.
     out = heaan_eval_exp(
         out, boot_context, eval_boot_keys, relin_key, logT, logI
     )
