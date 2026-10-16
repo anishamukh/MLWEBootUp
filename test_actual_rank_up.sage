@@ -58,7 +58,7 @@ SLOTS = int(POLDEG // 2)
 DELTA = ZZ(p_enc)
 Q0 = ZZ(q_list[0])
 
-# Dedicated RankUp auxiliary primes for the precision-sensitivity experiment.
+# Dedicated RankUp auxiliary primes for the precision experiment.
 # Both are prime and satisfy P = 1 (mod 2*2^14), hence they are NTT-friendly
 # for every tested n in {2^10, 2^12, 2^14}.
 # P54 is an intentionally smaller sensitivity point. 
