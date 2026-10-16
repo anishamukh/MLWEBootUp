@@ -30,12 +30,6 @@ def toy_modraise_q0_to_full(ciphertext_q0, active=L):
 
 
 def client_encrypt_q0(m_plain, key):
-    """Actual client-side low-rank, q0-only encryption.
-
-    This computes only the q0 residue of ModHE encryption.  It intentionally
-    avoids constructing the full Q ciphertext, so it models the desired client
-    optimization more faithfully than encrypting at Q and slicing q0.
-    """
     rank = key[0].ncols()
 
     e0 = random_poly_error()
