@@ -1,10 +1,6 @@
 # -----------------------------------------------------------------------------
 # encode.sage
-#
-# Base-ring CKKS encoding/decoding for the ModHE / MLWE-CKKS Sage prototype.
-#
-# This file implements standard CKKS packing only in the BASE RING
-#     R = Z[X]/(X^POLDEG + 1).
+# Base-ring CKKS encoding/decoding for the ModHE / MLWE-CKKS Sage.
 # -----------------------------------------------------------------------------
 
 try:
@@ -15,31 +11,27 @@ except NameError:
 CCK = ComplexField(CKKS_PREC)
 RRK = RealField(CKKS_PREC)
 
-# Use matrix reference only for small tests; it is O(N^2).
 try:
     CKKS_MATRIX_REF_MAX_N
 except NameError:
     CKKS_MATRIX_REF_MAX_N = 128
 
 
-# Basic CKKS root/index utilities
+# Basic CKKS root/index functions
 
 def ckks_num_slots():
     return POLDEG // 2
 
 
 def _ckks_zeta():
-    """Primitive 2N-th root zeta = exp(pi*i/N)."""
     return CCK(exp(CCK(I) * CCK.pi() / CCK(POLDEG)))
 
 
 def _ckks_omega():
-    """Primitive N-th root omega = zeta^2 = exp(2*pi*i/N)."""
     return CCK(exp(CCK(2) * CCK(I) * CCK.pi() / CCK(POLDEG)))
 
 
 def _pow5_mod_2N(j):
-    """Return 5^j modulo 2N as an odd integer in [0,2N)."""
     return ZZ(pow(ZZ(5), ZZ(j), ZZ(2*POLDEG)))
 
 
@@ -83,7 +75,6 @@ def _ckks_coeffs_complex(poly, n=POLDEG):
 
 
 def ckks_eval_poly_complex(poly, z):
-    """Evaluate a base-ring polynomial at a complex point z."""
     coeffs = _ckks_coeffs_complex(poly, POLDEG)
     acc = CCK(0)
     for c in reversed(coeffs):
@@ -116,12 +107,10 @@ def _ckks_fft_rec(a, inverse=False):
 
 
 def ckks_fft_forward(a):
-    """Forward FFT with positive exponent convention."""
     return _ckks_fft_rec([CCK(x) for x in a], inverse=False)
 
 
 def ckks_fft_inverse(A):
-    """Inverse FFT matching ckks_fft_forward."""
     n = len(A)
     out = _ckks_fft_rec([CCK(x) for x in A], inverse=True)
     return [x / CCK(n) for x in out]
@@ -208,7 +197,6 @@ def ckks_encode_matrix(values, scale=p_enc):
 
 
 def ckks_decode_matrix(poly, scale=p_enc, slots=None):
-    """Reference decoder by direct polynomial evaluation at CKKS roots."""
     if slots is None:
         slots = ckks_num_slots()
     roots = ckks_slot_roots()
@@ -217,11 +205,6 @@ def ckks_decode_matrix(poly, scale=p_enc, slots=None):
 # Public wrappers
 
 def ckks_encode(values, scale=p_enc, method="fft"):
-    """Encode a list of real/complex CKKS slot values into a base-ring polynomial.
-
-    method="fft"    : default, O(N log N) negacyclic iFFT implementation.
-    method="matrix" : slow O(N^2) reference, useful only for small POLDEG.
-    """
     if method == "fft":
         return ckks_encode_fft(values, scale)
     elif method == "matrix":
@@ -231,7 +214,6 @@ def ckks_encode(values, scale=p_enc, method="fft"):
 
 
 def ckks_decode(poly, scale=p_enc, slots=None, method="fft"):
-    """Decode a base-ring plaintext polynomial into CKKS slots."""
     if method == "fft":
         return ckks_decode_fft(poly, scale, slots)
     elif method == "matrix":
@@ -241,7 +223,6 @@ def ckks_decode(poly, scale=p_enc, slots=None, method="fft"):
 
 
 def ckks_encode_real(values, scale=p_enc, method="fft"):
-    """Convenience wrapper for real-valued slot vectors."""
     return ckks_encode([CCK(v) for v in values], scale, method)
 
 
@@ -255,13 +236,11 @@ def _center_lift_int_mod_q(a, q):
 
 
 def center_lift_poly_mod_q(poly_q, q=q_list[0]):
-    """Convert a polynomial modulo q to centered integer coefficients."""
     coeffs = _dense_coeffs(poly_q, POLDEG)
     return R([_center_lift_int_mod_q(c, q) for c in coeffs]) % firreducible
 
 
 def ckks_decode_from_q0(poly_q0, scale=p_enc, slots=None, method="fft"):
-    """Center-lift a q0 plaintext polynomial and decode it as CKKS slots."""
     return ckks_decode(center_lift_poly_mod_q(poly_q0, q_list[0]), scale, slots, method)
 
 
@@ -280,7 +259,6 @@ def ckks_codec_selftest(values=None, scale=p_enc, method="fft"):
 
 
 def ckks_codec_compare_fft_matrix(values=None, scale=p_enc):
-    """Compare FFT codec against the O(N^2) matrix reference for small N."""
     if POLDEG > CKKS_MATRIX_REF_MAX_N:
         print("Skipping matrix reference: POLDEG=", POLDEG, ">", CKKS_MATRIX_REF_MAX_N)
         return None
