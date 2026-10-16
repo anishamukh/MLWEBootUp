@@ -2,9 +2,7 @@ q_list = vector((576460752340123649, 9007199282003969, 9007199284101121, 9007199
 p = 9007199379521537;
 p_enc = 9007199254740992;
 
-# Number of RNS q-primes and MLWE module rank.  MLWE can now be set to any
-# rank >= 1 for key generation, encryption/decryption, multiplication and
-# relinearisation.  The cost of relinearisation grows as MLWE*(MLWE+1)/2.
+# Number of RNS q-primes and MLWE module rank.
 L = 7; MLWE = 2;
 
 moduli = []
@@ -20,7 +18,7 @@ p_inv_q = [0]*L
 for j in range(L):
     p_inv_q[j] = p^(-1) % q_list[j]
 
-# Polynomial degree.  Highest parameter set used by the prototype.
+# Polynomial degree. 
 POLDEG = 2^12;
 
 # Gaussian/noise bound used by this proof-of-concept sampler.
