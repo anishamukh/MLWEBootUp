@@ -45,7 +45,6 @@ def ModDown(b_share_p, b_shares_q, active=None):
 
 
 def ModDown_poly(poly_shares_q_plus_p, active):
-    """Apply ModDown to a polynomial represented in q_0...q_level plus p."""
     q_coeffs = [_dense_coeffs(poly_shares_q_plus_p[j], POLDEG) for j in range(active)]
     p_coeffs = _dense_coeffs(poly_shares_q_plus_p[active], POLDEG)
     out_coeffs = [[0]*POLDEG for _ in range(active)]
@@ -96,12 +95,7 @@ def relinearisation(non_linearized_ciphertext, evk_key):
             key_idx = out_pos
 
         else:
-
-            # Last temporary position is p.
             mod = p
-
-            # But the evaluation-key p-share is always at the
-            # FINAL position of the full key.
             key_idx = p_key_idx
 
         acc0 = R(0)
@@ -110,8 +104,6 @@ def relinearisation(non_linearized_ciphertext, evk_key):
         for t in range(len(pairs)):
 
             for j in range(active):
-
-                # j indexes the active RNS decomposition digit.
                 d = d2_qshares[t][j]
 
                 acc0 += poly_mod_prime(
@@ -154,7 +146,6 @@ def relinearisation(non_linearized_ciphertext, evk_key):
         for k in range(rank)
     ]
 
-    # Add the original linear portion of the product.
     cmult0_qshares = [None] * active
 
     cmult1_qshares = [
@@ -189,10 +180,7 @@ def relinearisation_old(non_linearized_ciphertext, evk_key):
     d2_qshares = non_linearized_ciphertext[2]
 
     rank = len(d1_qshares)
-    active = len(d0_qshares)     # number of q-prime shares currently active
-    # q_list is a Sage vector in constants.sage.  Convert the slice to a
-    # Python list before appending the special prime p; otherwise Sage tries
-    # to add a Vector_integer_dense and a Python list.
+    active = len(d0_qshares)
     out_moduli = list(q_list[:active]) + [p]
 
     pairs = evk_key[0]
@@ -208,20 +196,11 @@ def relinearisation_old(non_linearized_ciphertext, evk_key):
     ct1_prime = [[R(0) for _ in range(active+1)] for _ in range(rank)]
 
     """for out_idx in range(active+1):
-
-    # Output representation is:
-    #   0,...,active-1 -> q_0,...,q_{active-1}
-    #   active         -> special modulus p
         if out_idx < active:
             mod = q_list[out_idx]
             key_idx = out_idx
         else:
             mod = p
-
-            # IMPORTANT:
-            # Evaluation keys were generated over
-            # q_0,...,q_{L-1},p,
-            # so their p-share is permanently stored at index L.
             key_idx = L
 
         acc0 = R(0)
@@ -276,12 +255,9 @@ def relinearisation_old(non_linearized_ciphertext, evk_key):
         ct0_prime[out_idx] = poly_mod_prime(acc0, mod)
         for k in range(rank):
             ct1_prime[k][out_idx] = poly_mod_prime(acc1[k], mod)
-
-    # Scale the p-extended products back from p*q to q.
     ct0_scaled = ModDown_poly(ct0_prime, active)
     ct1_scaled = [ModDown_poly(ct1_prime[k], active) for k in range(rank)]
 
-    # Add the original degree-0 and degree-1 parts.
     cmult0_qshares = [None]*active
     cmult1_qshares = [[None]*active for _ in range(rank)]
 
