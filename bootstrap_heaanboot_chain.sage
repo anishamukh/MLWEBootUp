@@ -59,8 +59,6 @@ def configure_heaanboot_chain(logT=0, logI=4, extra_guard_primes=0,
     if boot_logp is None:
         boot_logp = _hb_floor_log2(q0) + 4
     boot_logp = ZZ(boot_logp)
-    # In HEAANBOOT q=2^logq and the boot scale is 2^(logq+4)=16*q.
-    # ModHE q0 is an odd RNS prime, so target the exact analogue 16*q0.
     boot_target = ZZ(16) * q0
 
     need = int(heaanboot_required_rescale_primes(logT, logI, packed=True))
@@ -78,14 +76,12 @@ def configure_heaanboot_chain(logT=0, logI=4, extra_guard_primes=0,
         qi = _hb_ntt_prime_below_target(boot_target, used=used, start_skip=skip)
         boot_qs.append(qi)
         used.add(qi)
-        # Move the next search farther away so repeated searches are quick.
         skip += 1
 
     new_qs = base_qs + boot_qs
     q_list = vector(ZZ, new_qs)
     L = len(new_qs)
 
-    # One special prime p, also near the boot scale and distinct from q_i.
     p = _hb_ntt_prime_below_target(boot_target, used=set(new_qs), start_skip=nboot + 7)
 
     moduli = list(new_qs) + [p]
