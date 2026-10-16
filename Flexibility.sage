@@ -10,13 +10,7 @@
 
 
 def _secret_to_list(secret_or_key):
-    """Return a Python list of secret polynomials.
-
-    Accepts a 1xr Sage matrix, a list/tuple of polynomials, or a full key
-    returned by public_private_keygen() = [s, b_pk, A].
-    """
     try:
-        # Full key [s,b,A]
         if isinstance(secret_or_key, (list, tuple)) and len(secret_or_key) >= 3:
             s = secret_or_key[0]
             return [s[0, i] for i in range(s.ncols())]
@@ -42,12 +36,6 @@ def _poly_coeff(poly, i):
 
 
 def _share_index(out_idx, active):
-    """Map output share index to the key-share index.
-
-    Keys are generated over q_0,...,q_{L-1},p, so the special-prime share is
-    always stored at index L.  For an active ciphertext level smaller than L-1,
-    the p-output share is at out_idx=active but must read key share L.
-    """
     if out_idx < active:
         return out_idx
     return L
@@ -64,16 +52,10 @@ def _zero_poly_shares(size):
 
 
 def _moddown_poly_shares(poly_shares_q_plus_p, active):
-    """ModDown from active q-shares plus one p-share to active q-shares."""
     return ModDown_poly(poly_shares_q_plus_p, active)
 
 
 def extend_key_with_extra_secret(key_prefix, target_rank):
-    """Create a key whose first components equal key_prefix's secret.
-
-    This is useful for demos such as rank 2 -> rank 4 -> rank 2, where rank
-    reduction should return to the original rank-2 secret prefix.
-    """
     prefix = _secret_to_list(key_prefix)
     if target_rank < len(prefix):
         raise ValueError("extend_key_with_extra_secret: target_rank must be >= prefix rank")
@@ -85,23 +67,9 @@ def extend_key_with_extra_secret(key_prefix, target_rank):
     return public_private_keygen(rank=target_rank, secret_polys=secret_polys)
 
 
-# -----------------------------------------------------------------------------
 # Rank-up / rank-lifting key switching
-# -----------------------------------------------------------------------------
 
 def rankup_keygen(s_src, s_tgt):
-    """Generate key-switching material from source rank to target rank.
-
-    For every source component u and RNS digit j, this stores an encryption of
-    p*B[j]*s_src[u] under the target secret s_tgt:
-
-        b_{u,j} = -<a_{u,j},s_tgt> + e_{u,j} + p*B[j]*s_src[u] mod pQ.
-
-    Output layout:
-        key = [b, a]
-        b[u][j][i]       = i-th modulus share of b_{u,j}
-        a[u][t][j][i]    = i-th modulus share of a_{u,j,t}
-    """
     s_src_list = _secret_to_list(s_src)
     print("\nsource secret=", s_src_list)
 
@@ -142,7 +110,6 @@ def rankup_keygen(s_src, s_tgt):
 
 
 def rank_up(ciphertext, rankup_key):
-    """Key-switch a ciphertext from source rank r_src to target rank r_tgt."""
     c0_qshares = ciphertext[0]
     c1_qshares = ciphertext[1]
     active = len(c0_qshares)
@@ -155,7 +122,6 @@ def rank_up(ciphertext, rankup_key):
     if len(c1_qshares) != r_src:
         raise ValueError("rank_up: ciphertext rank and rank-up key source rank do not match")
 
-    # Accumulate p-extended key-switching contribution.
     ks0 = _zero_poly_shares(active + 1)
     ks1 = [[R(0) for _ in range(active + 1)] for _ in range(r_tgt)]
 
@@ -190,28 +156,12 @@ def rank_up(ciphertext, rankup_key):
 
     return [out0, out1]
 
-
-# Convenience wrapper for a rank-1 client ciphertext lifted to an evaluation rank.
 def rankup_keygen_from_client_secret(s_client, s_eval):
     return rankup_keygen([s_client], s_eval)
 
-
-# -----------------------------------------------------------------------------
 # Rank reduction / rank down
-# -----------------------------------------------------------------------------
 
 def rankred_keygen(source_key_or_secret, target_rank):
-    """Generate ModHE rank-reduction key material from r_src to target_rank.
-
-    The target secret is the prefix (s_0,...,s_{target_rank-1}) of the source
-    secret.  The removed components s_{target_rank},...,s_{r_src-1} are encrypted
-    under this prefix secret, matching the ModHE rank-reduction construction.
-
-    Output layout:
-        key = [target_rank, removed_indices, b, a]
-        b[u][j][i]       = i-th share for removed component u at digit j
-        a[u][t][j][i]    = i-th share for target component t
-    """
     s_src = _secret_to_list(source_key_or_secret)
     r_src = len(s_src)
 
@@ -252,14 +202,11 @@ def rankred_keygen(source_key_or_secret, target_rank):
     print('rank-reduction key generated:', r_src, '->', target_rank)
     return [target_rank, removed_indices, b_matrix, a_matrix]
 
-
-# Backward-compatible name.
 def rankred_key(key, target_rank=1):
     return rankred_keygen(key, target_rank)
 
 
 def rank_red(ciphertext, rankred_key):
-    """Reduce ciphertext rank using a ModHE prefix rank-reduction key."""
     c0_qshares = ciphertext[0]
     c1_qshares = ciphertext[1]
     active = len(c0_qshares)
@@ -275,7 +222,6 @@ def rank_red(ciphertext, rankred_key):
     if removed_indices != list(range(target_rank, r_src)):
         raise ValueError("rank_red: key is not compatible with prefix rank reduction")
 
-    # Accumulate p-extended key-switching contribution for removed components.
     ks0 = _zero_poly_shares(active + 1)
     ks1 = [[R(0) for _ in range(active + 1)] for _ in range(target_rank)]
 
