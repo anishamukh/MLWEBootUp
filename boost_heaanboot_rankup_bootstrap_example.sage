@@ -1,11 +1,6 @@
 # -----------------------------------------------------------------------------
 # boost_rankup_bootstrap_example.sage
-#
-# Combined client-Boost path for this project:
-#   rank-1 q0-only client encryption
-#       -> MLWE rank-up/key-switch to evaluation rank
-#       -> HEAANBOOT-style ModHE bootstrap
-#       -> refreshed evaluation ciphertext.
+# Combined client-Boost path for this project
 # -----------------------------------------------------------------------------
 
 load("constants.sage")
@@ -57,7 +52,7 @@ ct_client = hb_wrap(ct_client_raw, scale=p_enc, slots=SLOTS, is_complex=True)
 print("\nclient ciphertext:", ct_client)
 print("client decrypt:", hb_decrypt_slots(ct_client, key_client))
 
-# Server: rank-up at q0.  This is a genuine same-message key switch, not zero padding.
+# Server: rank-up at q0.  
 ct_eval_q0_raw = rank_up(ct_client.raw, rankup_key)
 ct_eval_q0 = hb_wrap(ct_eval_q0_raw, scale=p_enc, slots=SLOTS, is_complex=True)
 print("\nafter rank-up:", ct_eval_q0)
