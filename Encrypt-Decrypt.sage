@@ -5,17 +5,14 @@ def encryption(m_plain, key):
     for k in range(MLWE):
         e0[0, k] = random_poly_error()
 
-    # Step2: generate error vector e1
     e1 = matrix(R, 1, MLWE)
     for k in range(MLWE):
         e1[0, k] = random_poly_error()
 
-    # Step3: generate sparse binary vector v
     v = matrix(R, 1, MLWE)
     for k in range(MLWE):
         v[0, k] = random_poly_sparse_binary()
 
-    # Step4: encode one real number as the constant coefficient
     m_enc = round(m_plain*p_enc)
     print("m=", m_plain)
 
