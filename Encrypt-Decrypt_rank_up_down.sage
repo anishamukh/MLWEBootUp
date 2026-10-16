@@ -11,23 +11,18 @@ def _key_rank(key):
 def encryption(m_plain, key):
     rank = _key_rank(key)
 
-    # Step1: generate error poly e0 in R^rank.  Only e0[0,0] is added to c0,
-    # matching the original proof-of-concept structure.
     e0 = matrix(R, 1, rank)
     for k in range(rank):
         e0[0, k] = random_poly_error()
 
-    # Step2: generate error vector e1
     e1 = matrix(R, 1, rank)
     for k in range(rank):
         e1[0, k] = random_poly_error()
 
-    # Step3: generate sparse binary vector v
     v = matrix(R, 1, rank)
     for k in range(rank):
         v[0, k] = random_poly_sparse_binary()
 
-    # Step4: encode one real number as the constant coefficient
     m_enc = round(m_plain*p_enc)
     print("m=", m_plain)
 
