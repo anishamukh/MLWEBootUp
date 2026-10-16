@@ -5,7 +5,6 @@ def random_between(j, k):
 
 
 def _dense_coeffs(poly, n=POLDEG):
-    """Return exactly n dense coefficients of a Sage polynomial."""
     try:
         coeffs = poly.coefficients(sparse=False)
     except AttributeError:
@@ -16,7 +15,6 @@ def _dense_coeffs(poly, n=POLDEG):
 
 
 def poly_mod_prime(pol_a, mod):
-    """Reduce a polynomial modulo x^N+1 and coefficient-wise modulo mod."""
     try:
         if pol_a.degree() >= POLDEG:
             pol_a = pol_a % firreducible
@@ -80,7 +78,6 @@ def rescaling_shares(coeff_shares, level_in, level_out):
 
 
 def rescaling_ciphertext(ct_shares, level_in, level_out):
-    """Fast coefficient-wise modulus switching for one polynomial component."""
     ct_coeffs = [_dense_coeffs(ct_shares[j], POLDEG) for j in range(level_in+1)]
     out_coeffs = [[0]*POLDEG for _ in range(level_out+1)]
 
