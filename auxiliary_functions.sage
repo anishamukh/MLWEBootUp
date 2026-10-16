@@ -1,7 +1,4 @@
 # Auxiliary functions for ModHE / MLWE-CKKS Sage prototype.
-# The routines below avoid coefficient-by-coefficient polynomial construction where
-# possible.  This matters at POLDEG = 2^14, where repeated `+ coeff*x^i` loops are
-# the main bottleneck of the original proof-of-concept code.
 
 def random_between(j, k):
     return int(random()*(k-j+1)) + j
