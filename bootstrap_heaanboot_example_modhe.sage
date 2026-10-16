@@ -12,15 +12,10 @@ load("bootstrap_heaanboot_chain.sage")
 # dependent.  Start with logT=0 for sanity chexk.
 LOGT = 5
 LOGI = 4
-
-# Append exactly the RNS primes consumed by the packed bootstrap.  The existing
-# q0,q1,... chain remains as the post-bootstrap evaluation chain.
 boot_cfg = configure_heaanboot_chain(logT=LOGT, logI=LOGI,
                                      extra_guard_primes=0,
                                      keep_existing_eval_primes=True,
                                      verbose=True)
-
-# Load the ModHE routines only after the chain has been finalized.
 load("auxiliary_functions.sage")
 load("KeyGen_rank_up_down.sage")
 load("Encrypt-Decrypt_rank_up_down.sage")
@@ -36,12 +31,10 @@ load("bootstrap_heaanboot_modhe.sage")
 key = public_private_keygen(rank=MLWE)
 relin_key = relin_keygen(key)
 
-# Full packing by default, as in the standard packed HEAANBOOT path.
 SLOTS = POLDEG // 2
 if SLOTS < 1 or (SLOTS & (SLOTS-1)) != 0:
     raise ValueError("POLDEG/2 must be a positive power of two")
 
-# Context::addBootContext + Scheme::addBootKey analogues.
 boot_context = heaan_add_boot_context(SLOTS, nominal_logp=boot_cfg["boot_logp"], verbose=True)
 boot_keys = heaan_boot_keygen(key, SLOTS,
                               exact_cpp_keyset=False,
@@ -51,8 +44,6 @@ print("\nbootstrapping keys=", boot_keys)
 
 heaan_bootstrap_depth_report(logT=LOGT, logI=LOGI, packed=True)
 
-# Keep test values modest; the 2018 bootstrap assumes the encoded plaintext is
-# small compared with q0 so that the scaled sine approximates modular reduction.
 base_vals = [
     0.035 + 0.010*I,
    -0.020 + 0.015*I,
@@ -122,9 +113,6 @@ print("TEST 2: normalized C2S -> S2C")
 print("================================================")
 
 logNh = ZZ(POLDEG//2).nbits() - 1
-
-# This is the normalization HEAANBOOT performs immediately
-# before CoeffToSlot.
 ct_norm = hb_div_by_po2(ct_full, logNh)
 
 print("after /2^logNh:")
@@ -236,7 +224,6 @@ print("\n================================================")
 print("TEST 3C: multiplication starting below full level")
 print("================================================")
 
-# Start from the correct full-chain ciphertext.
 ct_low = hb_mod_down_to_level(
     ct_full,
     ct_full.level() - 3
@@ -245,7 +232,6 @@ ct_low = hb_mod_down_to_level(
 print("full level =", ct_full.level())
 print("test level =", ct_low.level())
 
-# Modulus-down alone must not change the plaintext.
 dec_low = hb_decrypt_slots(ct_low, key)
 
 print("\nafter ModDown only:")
@@ -294,8 +280,6 @@ print("cipher:", ct)
 before = hb_decrypt_slots(ct, key)
 print("decrypt:", before)
 
-# Full sequence:
-#   normalize/ModRaise -> SubSum -> CoeffToSlot -> EvalExp -> SlotToCoeff.
 ct_boot = heaan_bootstrap(ct, boot_context, boot_keys, relin_key,
                           logT=LOGT, logI=LOGI,
                           output_scale=p_enc,
