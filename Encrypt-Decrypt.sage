@@ -1,8 +1,6 @@
 # function for ENCRYPTION for arbitrary MLWE rank
 
 def encryption(m_plain, key):
-    # Step1: generate error poly e0 in R^rank.  Only e0[0,0] is added to c0,
-    # matching the original proof-of-concept structure.
     e0 = matrix(R, 1, MLWE)
     for k in range(MLWE):
         e0[0, k] = random_poly_error()
